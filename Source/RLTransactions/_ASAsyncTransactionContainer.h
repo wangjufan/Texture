@@ -20,13 +20,10 @@
 #import <UIKit/UIKit.h>
 
 NS_ASSUME_NONNULL_BEGIN
-
 @class _ASAsyncTransaction;
-
 typedef NS_ENUM(NSUInteger, ASAsyncTransactionContainerState) {
   /**
-   The async container has no outstanding transactions.
-   Whatever it is displaying is up-to-date.
+   The async container has no outstanding transactions. Whatever it is displaying is up-to-date.
    */
   ASAsyncTransactionContainerStateNoTransactions = 0,
   /**
@@ -37,7 +34,6 @@ typedef NS_ENUM(NSUInteger, ASAsyncTransactionContainerState) {
 };
 
 @protocol ASAsyncTransactionContainer
-
 /**
  @summary If YES, the receiver is marked as a container for async transactions, grouping all of the transactions
  in the container hierarchy below the receiver together in a single ASAsyncTransaction.
@@ -45,20 +41,17 @@ typedef NS_ENUM(NSUInteger, ASAsyncTransactionContainerState) {
  @default NO
  */
 @property (nonatomic, getter=asyncdisplaykit_isAsyncTransactionContainer, setter=asyncdisplaykit_setAsyncTransactionContainer:) BOOL asyncdisplaykit_asyncTransactionContainer;
-
 /**
  @summary The current state of the receiver; indicates if it is currently performing asynchronous operations or if all operations have finished/canceled.
  */
 @property (nonatomic, readonly) ASAsyncTransactionContainerState asyncdisplaykit_asyncTransactionContainerState;
-
 /**
  @summary Cancels all async transactions on the receiver.
  */
 - (void)asyncdisplaykit_cancelAsyncTransactions;
-
 @property (nullable, nonatomic, setter=asyncdisplaykit_setCurrentAsyncTransaction:) _ASAsyncTransaction *asyncdisplaykit_currentAsyncTransaction;
-
 @end
+
 
 @interface CALayer (ASAsyncTransactionContainer) <ASAsyncTransactionContainer>
 /**
