@@ -24,9 +24,16 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface CALayer (ASAsyncTransactionContainerTransactions)
 @property (nonatomic, nullable, setter=asyncdisplaykit_setAsyncLayerTransactions:) NSHashTable<_ASAsyncTransaction *> *asyncdisplaykit_asyncLayerTransactions;
-
+// only for test
 - (void)asyncdisplaykit_asyncTransactionContainerWillBeginTransaction:(_ASAsyncTransaction *)transaction;
 - (void)asyncdisplaykit_asyncTransactionContainerDidCompleteTransaction:(_ASAsyncTransaction *)transaction;
+@end
+
+@implementation CALayer (ASAsyncTransactionContainerTransactions)
+@dynamic asyncdisplaykit_asyncLayerTransactions;
+// No-ops in the base class. Mostly exposed for testing.
+- (void)asyncdisplaykit_asyncTransactionContainerWillBeginTransaction:(_ASAsyncTransaction *)transaction {}
+- (void)asyncdisplaykit_asyncTransactionContainerDidCompleteTransaction:(_ASAsyncTransaction *)transaction {}
 @end
 
 NS_ASSUME_NONNULL_END

@@ -32,76 +32,67 @@
 
 NSInteger const ASDefaultTransactionPriority = 0;
 
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
 @interface ASAsyncTransactionOperation : NSObject
 - (instancetype)initWithOperationCompletionBlock:(asyncdisplaykit_async_transaction_operation_completion_block_t)operationCompletionBlock;
 @property (nonatomic) asyncdisplaykit_async_transaction_operation_completion_block_t operationCompletionBlock;
 @property id value; // set on bg queue by the operation block
 @end
-
 @implementation ASAsyncTransactionOperation
-
-- (instancetype)initWithOperationCompletionBlock:(asyncdisplaykit_async_transaction_operation_completion_block_t)operationCompletionBlock
-{
+- (instancetype)initWithOperationCompletionBlock:(asyncdisplaykit_async_transaction_operation_completion_block_t)operationCompletionBlock{
   if ((self = [super init])) {
     _operationCompletionBlock = operationCompletionBlock;
   }
   return self;
 }
-
-- (void)dealloc
-{
+- (void)dealloc{
   NSAssert(_operationCompletionBlock == nil, @"Should have been called and released before -dealloc");
 }
-
-- (void)callAndReleaseCompletionBlock:(BOOL)canceled;
-{
+- (void)callAndReleaseCompletionBlock:(BOOL)canceled;{
   ASDisplayNodeAssertMainThread();
   if (_operationCompletionBlock) {
     _operationCompletionBlock(self.value, canceled);
-    // Guarantee that _operationCompletionBlock is released on main thread
+    // Guarantee that _operationCompletionBlock is released on main thread  ???????????????????/
     _operationCompletionBlock = nil;
   }
 }
-
-- (NSString *)description
-{
+- (NSString *)description{
   return [NSString stringWithFormat:@"<ASAsyncTransactionOperation: %p - value = %@>", self, self.value];
 }
-
 @end
 
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
 // Lightweight operation queue for _ASAsyncTransaction that limits number of spawned threads
 class ASAsyncTransactionQueue
 {
 public:
-  
   // Similar to dispatch_group_t
   class Group
   {
   public:
     // call when group is no longer needed; after last scheduled operation the group will delete itself
     virtual void release() = 0;
-    
     // schedule block on given queue
-    virtual void schedule(NSInteger priority, dispatch_queue_t queue, dispatch_block_t block) = 0;
-    
+    virtual void schedule(NSInteger priority,
+                          dispatch_queue_t queue,
+                          dispatch_block_t block) = 0;
     // dispatch block on given queue when all previously scheduled blocks finished executing
     virtual void notify(dispatch_queue_t queue, dispatch_block_t block) = 0;
-    
     // used when manually executing blocks
     virtual void enter() = 0;
     virtual void leave() = 0;
-    
     // wait until all scheduled blocks finished executing
     virtual void wait() = 0;
-    
   protected:
     virtual ~Group() { }; // call release() instead
   };
   
   // Create new group
   Group *createGroup();
-  
   static ASAsyncTransactionQueue &instance();
   
 private:
@@ -130,10 +121,11 @@ private:
     virtual void wait();
     
     int _pendingOperations;
-    std::list<GroupNotify> _notifyList;
-    std::condition_variable _condition;
     BOOL _releaseCalled;
     ASAsyncTransactionQueue &_queue;
+    
+    std::list<GroupNotify> _notifyList;
+    std::condition_variable _condition;
   };
   
   struct Operation
@@ -327,10 +319,13 @@ ASAsyncTransactionQueue & ASAsyncTransactionQueue::instance()
   return *instance;
 }
 
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+
 @interface _ASAsyncTransaction ()
 @property ASAsyncTransactionState state;
 @end
-
 
 @implementation _ASAsyncTransaction
 {
@@ -388,12 +383,10 @@ ASAsyncTransactionQueue & ASAsyncTransactionQueue::instance()
   self.state = ASAsyncTransactionStateCanceled;
 }
 
-- (void)commit
-{
+- (void)commit{
   ASDisplayNodeAssertMainThread();
   NSAssert(self.state == ASAsyncTransactionStateOpen, @"You cannot double-commit a transaction");
   self.state = ASAsyncTransactionStateCommitted;
-  
   if ([_operations count] == 0) {
     // Fast path: if a transaction was opened, but no operations were added, execute completion block synchronously.
     if (_completionBlock) {
@@ -401,7 +394,6 @@ ASAsyncTransactionQueue & ASAsyncTransactionQueue::instance()
     }
   } else {
     NSAssert(_group != NULL, @"If there are operations, dispatch group should have been created");
-    
     _group->notify(dispatch_get_main_queue(), ^{
       [self completeTransaction];
     });
@@ -417,12 +409,10 @@ ASAsyncTransactionQueue & ASAsyncTransactionQueue::instance()
     for (ASAsyncTransactionOperation *operation in _operations) {
       [operation callAndReleaseCompletionBlock:isCanceled];
     }
-    
     // Always set state to Complete, even if we were cancelled, to block any extraneous
     // calls to this method that may have been scheduled for the next runloop
     // (e.g. if we needed to force one in this runloop with -waitUntilComplete, but another was already scheduled)
     self.state = ASAsyncTransactionStateComplete;
-
     if (_completionBlock) {
       _completionBlock(self, isCanceled);
     }
@@ -453,10 +443,9 @@ ASAsyncTransactionQueue & ASAsyncTransactionQueue::instance()
 }
 
 #pragma mark - Helper Methods
-
-- (void)_ensureTransactionData
-{
-  // Lazily initialize _group and _operations to avoid overhead in the case where no operations are added to the transaction
+- (void)_ensureTransactionData{
+  // Lazily initialize _group and _operations to avoid overhead in the case
+//  where no operations are added to the transaction
   if (_group == NULL) {
     _group = ASAsyncTransactionQueue::instance().createGroup();
   }
@@ -464,10 +453,8 @@ ASAsyncTransactionQueue & ASAsyncTransactionQueue::instance()
     _operations = [[NSMutableArray alloc] init];
   }
 }
-
-- (NSString *)description
-{
+- (NSString *)description{
   return [NSString stringWithFormat:@"<_ASAsyncTransaction: %p - _state = %lu, _group = %p, _operations = %@>", self, (unsigned long)self.state, _group, _operations];
 }
-
 @end
+

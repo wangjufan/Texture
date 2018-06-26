@@ -24,13 +24,16 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol ASCATransactionQueueObserving <NSObject>
 - (void)prepareForCATransactionCommit;
 @end
-
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 @interface ASAbstractRunLoopQueue : NSObject
 @end
 
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 AS_SUBCLASSING_RESTRICTED
 @interface ASRunLoopQueue<ObjectType> : ASAbstractRunLoopQueue <ASLocking>
-
 /**
  * Create a new queue with the given run loop and handler.
  *
@@ -53,16 +56,14 @@ AS_SUBCLASSING_RESTRICTED
 
 @property (nonatomic) NSUInteger batchSize;           // Default == 1.
 @property (nonatomic) BOOL ensureExclusiveMembership; // Default == YES.  Set-like behavior.
-
 @end
-
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 AS_SUBCLASSING_RESTRICTED
 @interface ASCATransactionQueue : ASAbstractRunLoopQueue
-
 @property (readonly) BOOL isEmpty;
-
 @property (readonly, getter=isEnabled) BOOL enabled;
-
 /**
  * The queue to run on main run loop before CATransaction commit.
  *
@@ -72,20 +73,16 @@ AS_SUBCLASSING_RESTRICTED
  */
 @property (class, readonly) ASCATransactionQueue *sharedQueue;
 + (ASCATransactionQueue *)sharedQueue NS_RETURNS_RETAINED;
-
 - (void)enqueue:(id<ASCATransactionQueueObserving>)object;
-
 @end
-
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 @interface ASDeallocQueue : NSObject
-
 @property (class, readonly) ASDeallocQueue *sharedDeallocationQueue;
 + (ASDeallocQueue *)sharedDeallocationQueue NS_RETURNS_RETAINED;
-
 - (void)drain;
-
 - (void)releaseObjectInBackground:(id __strong _Nullable * _Nonnull)objectPtr;
-
 @end
 
 NS_ASSUME_NONNULL_END

@@ -1512,7 +1512,6 @@ void recursivelyTriggerDisplayForLayer(CALayer *layer, BOOL shouldBlock)
   for (CALayer *sublayer in [layer.sublayers copy]) {
     recursivelyTriggerDisplayForLayer(sublayer, shouldBlock);
   }
-  
   if (shouldBlock) {
     // As the recursion unwinds, verify each transaction is complete and block if it is not.
     // While blocking on one transaction, others may be completing concurrently, so it doesn't matter which blocks first.
