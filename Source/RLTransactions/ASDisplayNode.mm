@@ -1397,9 +1397,9 @@ NSString * const ASRenderingEngineDidDisplayNodesScheduledBeforeTimestamp = @"AS
   static ASRunLoopQueue<ASDisplayNode *> *renderQueue;
   dispatch_once(&onceToken, ^{
     renderQueue = [[ASRunLoopQueue<ASDisplayNode *> alloc] initWithRunLoop:CFRunLoopGetMain()
-                                                             retainObjects:NO
-                                                                   handler:^(ASDisplayNode * _Nonnull dequeuedItem, BOOL isQueueDrained) {
-      [dequeuedItem _recursivelyTriggerDisplayAndBlock:NO];
+                  retainObjects:NO
+                  handler:^(ASDisplayNode * _Nonnull dequeuedItem, BOOL isQueueDrained) {
+      [dequeuedItem _recursivelyTriggerDisplayAndBlock:NO];/////////////
       if (isQueueDrained) {
         CFTimeInterval timestamp = CACurrentMediaTime();
         [[NSNotificationCenter defaultCenter] postNotificationName:ASRenderingEngineDidDisplayScheduledNodesNotification

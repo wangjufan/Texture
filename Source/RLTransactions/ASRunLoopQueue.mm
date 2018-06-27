@@ -30,24 +30,22 @@
 #define ASRunLoopQueueLoggingEnabled 0
 #define ASRunLoopQueueVerboseLoggingEnabled 0
 
-static void runLoopSourceCallback(void *info) {
-  // No-op
+static void runLoopSourceCallback(void *info) {// No-op
 #if ASRunLoopQueueVerboseLoggingEnabled
   NSLog(@"<%@> - Called runLoopSourceCallback", info);
 #endif
 }
 
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 #pragma mark - ASDeallocQueue
-
 @interface ASDeallocQueueV1 : ASDeallocQueue
 @end
 @interface ASDeallocQueueV2 : ASDeallocQueue
 @end
-
 @implementation ASDeallocQueue
-
-+ (ASDeallocQueue *)sharedDeallocationQueue NS_RETURNS_RETAINED
-{
++ (ASDeallocQueue *)sharedDeallocationQueue NS_RETURNS_RETAINED {
   static ASDeallocQueue *deallocQueue = nil;
   static dispatch_once_t onceToken;
   dispatch_once(&onceToken, ^{
@@ -59,12 +57,10 @@ static void runLoopSourceCallback(void *info) {
   });
   return deallocQueue;
 }
-
 - (void)releaseObjectInBackground:(id  _Nullable __strong *)objectPtr
 {
   ASDisplayNodeFailAssert(@"Abstract method.");
 }
-
 @end
 
 @implementation ASDeallocQueueV1 {
@@ -73,7 +69,6 @@ static void runLoopSourceCallback(void *info) {
   std::deque<id> _queue;
   ASDN::RecursiveMutex _queueLock;
 }
-
 - (void)releaseObjectInBackground:(id  _Nullable __strong *)objectPtr
 {
   if (objectPtr != NULL && *objectPtr != nil) {
@@ -235,7 +230,6 @@ static void runLoopSourceCallback(void *info) {
     });
   }
 }
-
 - (void)drain
 {
   _lock.lock();
@@ -246,9 +240,10 @@ static void runLoopSourceCallback(void *info) {
     CFRelease(ref);
   }
 }
-
 @end
-
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 #if AS_KDEBUG_ENABLE
 /**
  * This is real, private CA API. Valid as of iOS 10.
@@ -258,7 +253,6 @@ typedef enum {
   kCATransactionPhasePreCommit,
   kCATransactionPhasePostCommit,
 } CATransactionPhase;
-
 @interface CATransaction (Private)
 + (void)addCommitHandler:(void(^)(void))block forPhase:(CATransactionPhase)phase;
 + (int)currentState;
@@ -266,42 +260,37 @@ typedef enum {
 #endif
 
 #pragma mark - ASAbstractRunLoopQueue
-
 @interface ASAbstractRunLoopQueue (Private)
 + (void)load;
 + (void)registerCATransactionObservers;
 @end
-
 @implementation ASAbstractRunLoopQueue
-
-- (instancetype)init
-{
+- (instancetype)init{
   if (self != [super init]) {
     return nil;
   }
   ASDisplayNodeAssert(self.class != [ASAbstractRunLoopQueue class], @"Should never create instances of abstract class ASAbstractRunLoopQueue.");
   return self;
 }
-
 #if AS_KDEBUG_ENABLE
-+ (void)load
-{
++ (void)load{
   [self registerCATransactionObservers];
 }
-
-+ (void)registerCATransactionObservers
-{
++ (void)registerCATransactionObservers{
   static BOOL privateCAMethodsExist;
   static dispatch_block_t preLayoutHandler;
   static dispatch_block_t preCommitHandler;
   static dispatch_block_t postCommitHandler;
   static dispatch_once_t onceToken;
+  
   dispatch_once(&onceToken, ^{
+    
     privateCAMethodsExist = [CATransaction respondsToSelector:@selector(addCommitHandler:forPhase:)];
     privateCAMethodsExist &= [CATransaction respondsToSelector:@selector(currentState)];
     if (!privateCAMethodsExist) {
       NSLog(@"Private CA methods are gone.");
     }
+    
     preLayoutHandler = ^{
       ASSignpostStartCustom(ASSignpostCATransactionLayout, 0, [CATransaction currentState]);
     };
@@ -320,16 +309,22 @@ typedef enum {
   });
 
   if (privateCAMethodsExist) {
-    [CATransaction addCommitHandler:preLayoutHandler forPhase:kCATransactionPhasePreLayout];
-    [CATransaction addCommitHandler:preCommitHandler forPhase:kCATransactionPhasePreCommit];
-    [CATransaction addCommitHandler:postCommitHandler forPhase:kCATransactionPhasePostCommit];
+    [CATransaction addCommitHandler:preLayoutHandler
+                           forPhase:kCATransactionPhasePreLayout];
+    
+    [CATransaction addCommitHandler:preCommitHandler
+                           forPhase:kCATransactionPhasePreCommit];
+    
+    [CATransaction addCommitHandler:postCommitHandler
+                           forPhase:kCATransactionPhasePostCommit];
   }
 }
-
 #endif // AS_KDEBUG_ENABLE
-
 @end
 
+/////////////////////////////////////////////////////
+/////////////////////////////////////////////////////
+/////////////////////////////////////////////////////
 #pragma mark - ASRunLoopQueue
 
 @interface ASRunLoopQueue () {
@@ -346,20 +341,23 @@ typedef enum {
   NSTimer *_runloopQueueLoggingTimer;
 #endif
 }
-
 @property (nonatomic) void (^queueConsumer)(id dequeuedItem, BOOL isQueueDrained);
-
 @end
 
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 @implementation ASRunLoopQueue
 
-- (instancetype)initWithRunLoop:(CFRunLoopRef)runloop retainObjects:(BOOL)retainsObjects handler:(void (^)(id _Nullable, BOOL))handlerBlock
-{
+- (instancetype)initWithRunLoop:(CFRunLoopRef)runloop
+                  retainObjects:(BOOL)retainsObjects
+                        handler:(void (^)(id _Nullable, BOOL))handlerBlock{
   if (self = [super init]) {
     _runLoop = runloop;
     NSPointerFunctionsOptions options = retainsObjects ? NSPointerFunctionsStrongMemory : NSPointerFunctionsWeakMemory;
     _internalQueue = [[NSPointerArray alloc] initWithOptions:options];
     _queueConsumer = handlerBlock;
+    
     _batchSize = 1;
     _ensureExclusiveMembership = YES;
 
@@ -392,15 +390,18 @@ typedef enum {
     CFRunLoopAddSource(runloop, _runLoopSource, kCFRunLoopCommonModes);
 
 #if ASRunLoopQueueLoggingEnabled
-    _runloopQueueLoggingTimer = [NSTimer timerWithTimeInterval:1.0 target:self selector:@selector(checkRunLoop) userInfo:nil repeats:YES];
+    _runloopQueueLoggingTimer = [NSTimer timerWithTimeInterval:1.0
+                                    target:self
+                                    selector:@selector(checkRunLoop)
+                                    userInfo:nil
+                                    repeats:YES];
     [[NSRunLoop mainRunLoop] addTimer:_runloopQueueLoggingTimer forMode:NSRunLoopCommonModes];
 #endif
   }
   return self;
 }
 
-- (void)dealloc
-{
+- (void)dealloc{
   if (CFRunLoopContainsSource(_runLoop, _runLoopSource, kCFRunLoopCommonModes)) {
     CFRunLoopRemoveSource(_runLoop, _runLoopSource, kCFRunLoopCommonModes);
   }
@@ -415,8 +416,7 @@ typedef enum {
 }
 
 #if ASRunLoopQueueLoggingEnabled
-- (void)checkRunLoop
-{
+- (void)checkRunLoop{
     NSLog(@"<%@> - Jobs: %ld", self, _internalQueue.size());
 }
 #endif
@@ -543,8 +543,11 @@ ASSynthesizeLockingMethodsWithMutex(_internalQueueLock)
 
 @end
 
-#pragma mark - ASCATransactionQueue
 
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+#pragma mark - ASCATransactionQueue
 @interface ASCATransactionQueue () {
   CFRunLoopRef _runLoop;
   CFRunLoopSourceRef _runLoopSource;
@@ -553,15 +556,12 @@ ASSynthesizeLockingMethodsWithMutex(_internalQueueLock)
   NSPointerArray *_internalQueue;
   ASDN::RecursiveMutex _internalQueueLock;
   BOOL _CATransactionCommitInProgress;
-
   // In order to not pollute the top-level activities, each queue has 1 root activity.
   os_activity_t _rootActivity;
-
 #if ASRunLoopQueueLoggingEnabled
   NSTimer *_runloopQueueLoggingTimer;
 #endif
 }
-
 @end
 
 @implementation ASCATransactionQueue
@@ -605,14 +605,14 @@ static int const kASASCATransactionQueuePostOrder = 3000000;
     void (^handlerBlock) (CFRunLoopObserverRef observer, CFRunLoopActivity activity) = ^(CFRunLoopObserverRef observer, CFRunLoopActivity activity) {
       [weakSelf processQueue];
     };
+    _preTransactionObserver = CFRunLoopObserverCreateWithHandler(NULL, kCFRunLoopBeforeWaiting, true, kASASCATransactionQueueOrder, handlerBlock);
+    CFRunLoopAddObserver(_runLoop, _preTransactionObserver,  kCFRunLoopCommonModes);
+    
     void (^postHandlerBlock) (CFRunLoopObserverRef observer, CFRunLoopActivity activity) = ^(CFRunLoopObserverRef observer, CFRunLoopActivity activity) {
       ASDN::MutexLocker l(_internalQueueLock);
       _CATransactionCommitInProgress = NO;
     };
-    _preTransactionObserver = CFRunLoopObserverCreateWithHandler(NULL, kCFRunLoopBeforeWaiting, true, kASASCATransactionQueueOrder, handlerBlock);
     _postTransactionObserver = CFRunLoopObserverCreateWithHandler(NULL, kCFRunLoopBeforeWaiting, true, kASASCATransactionQueuePostOrder, postHandlerBlock);
-
-    CFRunLoopAddObserver(_runLoop, _preTransactionObserver,  kCFRunLoopCommonModes);
     CFRunLoopAddObserver(_runLoop, _postTransactionObserver,  kCFRunLoopCommonModes);
 
     // It is not guaranteed that the runloop will turn if it has no scheduled work, and this causes processing of
